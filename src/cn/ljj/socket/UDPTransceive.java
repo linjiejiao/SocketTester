@@ -59,14 +59,14 @@ public class UDPTransceive {
     public void close() {
         System.out.println("UDPTransceive close");
         try {
-            if (mSocket != null) {
-                mSocket.close();
-            }
             if (mReadingThread != null) {
                 mReadingThread.cancel();
             }
             if (mWritingThread != null) {
                 mWritingThread.cancel();
+            }
+            if (mSocket != null) {
+                mSocket.close();
             }
         } catch (Exception e1) {
             e1.printStackTrace();
@@ -78,7 +78,6 @@ public class UDPTransceive {
         private byte[] mBuffer = new byte[1024 * 10];
 
         private void cancel() {
-            System.out.println("UDPTransceive ReadingThread cancel");
             mCancel = true;
         }
 
@@ -107,7 +106,9 @@ public class UDPTransceive {
                     }
                 }
             } catch (Exception e) {
-                e.printStackTrace();
+                if (!mCancel) {
+                    e.printStackTrace();
+                }
             }
             mReadingThread = null;
             super.run();
@@ -120,7 +121,6 @@ public class UDPTransceive {
         private long mDataTag = 0;
 
         private void cancel() {
-            System.out.println("UDPTransceive WritingThread cancel");
             mCancel = true;
             synchronized (this) {
                 notify();
@@ -181,7 +181,9 @@ public class UDPTransceive {
                         }
                     }
                 } catch (InterruptedException e) {
-                    e.printStackTrace();
+                    if (!mCancel) {
+                        e.printStackTrace();
+                    }
                 }
             }
             mWritingThread = null;

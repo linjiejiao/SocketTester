@@ -7,6 +7,7 @@ import java.security.InvalidParameterException;
 
 public class TCPClient {
     private Socket mClientSocket = null;
+    private boolean isConnecting = false;
     private InputStream mInputStream = null;
     private OutputStream mOutputStream = null;
     private String mRemoteIPAddress = null;
@@ -34,12 +35,16 @@ public class TCPClient {
         mListener = listener;
     }
 
+    public void setListener(ITCPClientListener listener) {
+        mListener = listener;
+    }
+
     public void connect() {
         if (mReadingThread == null) {
             mReadingThread = new ReadingThread();
             mReadingThread.start();
         } else {
-            System.err.println("TCPClient mWritingThread != null!");
+            System.err.println("TCPClient mReadingThread != null!");
             if (mListener != null) {
                 mListener.onSocketConnected(false);
             }
@@ -57,6 +62,11 @@ public class TCPClient {
         }
     }
 
+    public void disconnect() {
+        closeAllResourse();
+        System.out.println("TCPClient disconnect");
+    }
+
     public void sendData(byte[] data, long tag) {
         if (mWritingThread != null) {
             mWritingThread.sendData(data, tag);
@@ -67,6 +77,14 @@ public class TCPClient {
 
     private void closeAllResourse() {
         try {
+            if (mReadingThread != null) {
+                mReadingThread.cancel();
+                mReadingThread = null;
+            }
+            if (mWritingThread != null) {
+                mWritingThread.cancel();
+                mWritingThread = null;
+            }
             if (mInputStream != null) {
                 mInputStream.close();
                 mInputStream = null;
@@ -78,14 +96,6 @@ public class TCPClient {
             if (mClientSocket != null) {
                 mClientSocket.close();
                 mClientSocket = null;
-            }
-            if (mReadingThread != null) {
-                mReadingThread.cancel();
-                mReadingThread = null;
-            }
-            if (mWritingThread != null) {
-                mWritingThread.cancel();
-                mWritingThread = null;
             }
         } catch (Exception e1) {
             e1.printStackTrace();
@@ -104,6 +114,7 @@ public class TCPClient {
         @Override
         public void run() {
             // connect
+            isConnecting = true;
             try {
                 if (mClientSocket == null) {
                     mClientSocket = new Socket(mRemoteIPAddress, mRemotePort);
@@ -112,16 +123,21 @@ public class TCPClient {
                     if (mListener != null) {
                         mListener.onSocketConnected(false);
                     }
+                    isConnecting = false;
                     return;
                 }
                 mInputStream = mClientSocket.getInputStream();
                 mOutputStream = mClientSocket.getOutputStream();
+                isConnecting = false;
             } catch (Exception e) {
-                e.printStackTrace();
-                closeAllResourse();
-                if (mListener != null) {
-                    mListener.onSocketConnected(false);
+                if (!mCancel) {
+                    e.printStackTrace();
+                    closeAllResourse();
+                    if (mListener != null) {
+                        mListener.onSocketConnected(false);
+                    }
                 }
+                isConnecting = false;
                 return;
             }
             // reading
@@ -132,7 +148,6 @@ public class TCPClient {
                     }
                     if (mInputStream != null) {
                         int length = mInputStream.read(mBuffer);
-                        System.out.println("TCPClient ReadingThread read data length=" + length);
                         if (length > 0) {
                             if (mListener != null) {
                                 byte[] copyBuffer = new byte[length];
@@ -147,12 +162,16 @@ public class TCPClient {
                     }
                 }
             } catch (Exception e) {
-                e.printStackTrace();
+                if (!mCancel) {
+                    e.printStackTrace();
+                }
             }
-            if (mListener != null) {
-                mListener.onSocketDisconnected();
+            if (!mCancel) {
+                if (mListener != null) {
+                    mListener.onSocketDisconnected();
+                }
+                closeAllResourse();
             }
-            closeAllResourse();
             super.run();
         }
     }
@@ -171,6 +190,12 @@ public class TCPClient {
         }
 
         private void sendData(byte[] data, long tag) {
+            if (mCancel) {
+                System.err.println("TCPClient WritingThread sendData already closed!");
+                if (mListener != null) {
+                    mListener.onDataSent(false, tag);
+                }
+            }
             if (mWritebuffer != null) {
                 System.err.println("TCPClient WritingThread sendData busy!");
                 if (mListener != null) {
@@ -191,11 +216,7 @@ public class TCPClient {
                 try {
                     while (true) {
                         if (mWritebuffer == null) {
-                            System.out.println("TCPClient WritingThread waiting for new data to send");
                             wait();
-                            if (!mCancel) {
-                                System.out.println("TCPClient WritingThread start to send new data");
-                            }
                         }
                         if (mCancel) {
                             break;
@@ -210,10 +231,12 @@ public class TCPClient {
                                     e.printStackTrace();
                                 }
                             } else {
-                                System.err.println("TCPClient WritingThread sendData mOutputStream = null");
+                                System.err.println("TCPClient WritingThread sendData mOutputStream = null isConnecting="
+                                        + isConnecting);
                             }
                         } else {
-                            System.err.println("TCPClient WritingThread sendData mWritebuffer = null");
+                            System.err.println("TCPClient WritingThread sendData mWritebuffer = null isConnecting="
+                                    + isConnecting);
                         }
                         mWritebuffer = null;
                         if (mListener != null) {
@@ -221,12 +244,16 @@ public class TCPClient {
                         }
                     }
                 } catch (InterruptedException e) {
-                    e.printStackTrace();
+                    if (!mCancel) {
+                        e.printStackTrace();
+                    }
                 }
             }
-            closeAllResourse();
-            if (mListener != null) {
-                mListener.onSocketDisconnected();
+            if (!mCancel) {
+                closeAllResourse();
+                if (mListener != null) {
+                    mListener.onSocketDisconnected();
+                }
             }
             super.run();
         }

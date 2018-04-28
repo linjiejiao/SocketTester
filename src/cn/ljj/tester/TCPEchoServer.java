@@ -1,14 +1,19 @@
 package cn.ljj.tester;
 
-import java.net.Socket;
+import java.util.ArrayList;
 
 import cn.ljj.socket.ITCPClientListener;
 import cn.ljj.socket.ITCPServerListener;
 import cn.ljj.socket.TCPClient;
 import cn.ljj.socket.TCPServer;
 
+interface EchoDisconnectListener {
+    void onEchoDisconnected(TCPEchoHandler echo);
+}
+
 class TCPEchoHandler implements ITCPClientListener {
     public TCPClient mClient = null;
+    public EchoDisconnectListener mDisconnectListener = null;
 
     @Override
     public void onSocketConnected(boolean success) {
@@ -18,6 +23,9 @@ class TCPEchoHandler implements ITCPClientListener {
     @Override
     public void onSocketDisconnected() {
         System.out.println("TCPEcho onSocketDisconnected");
+        if (mDisconnectListener != null) {
+            mDisconnectListener.onEchoDisconnected(this);
+        }
     }
 
     @Override
@@ -34,8 +42,9 @@ class TCPEchoHandler implements ITCPClientListener {
     }
 }
 
-public class TCPEchoServer {
+public class TCPEchoServer implements EchoDisconnectListener {
     private TCPServer mServer;
+    private ArrayList<TCPEchoHandler> mConnectingEchoList = new ArrayList<TCPEchoHandler>();
 
     public TCPEchoServer() {
 
@@ -48,11 +57,13 @@ public class TCPEchoServer {
         mServer = new TCPServer();
         mServer.startListen(port, new ITCPServerListener() {
             @Override
-            public void onSocketConnected(Socket clientSocket) {
+            public void onSocketConnected(TCPClient client) {
                 TCPEchoHandler echo = new TCPEchoHandler();
-                TCPClient client = new TCPClient(clientSocket, echo);
+                client.setListener(echo);
                 echo.mClient = client;
+                echo.mDisconnectListener = TCPEchoServer.this;
                 client.connect();
+                mConnectingEchoList.add(echo);
             }
 
             @Override
@@ -68,9 +79,19 @@ public class TCPEchoServer {
     }
 
     public void stop() {
+        System.out.println("TCPEchoServer stop");
         if (mServer != null) {
             mServer.stopListen();
             mServer = null;
         }
+        for (TCPEchoHandler handler : mConnectingEchoList) {
+            handler.mClient.disconnect();
+        }
+        mConnectingEchoList.clear();
+    }
+
+    @Override
+    public void onEchoDisconnected(TCPEchoHandler echo) {
+        mConnectingEchoList.remove(echo);
     }
 }
