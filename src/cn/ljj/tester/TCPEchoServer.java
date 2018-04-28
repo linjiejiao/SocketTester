@@ -58,7 +58,7 @@ public class TCPEchoServer implements EchoDisconnectListener {
         mServer.startListen(port, new ITCPServerListener() {
             @Override
             public void onSocketConnected(TCPClient client) {
-                TCPEchoHandler echo = new TCPEchoHandler();
+                TCPEchoHandler echo = getHandler();
                 client.setListener(echo);
                 echo.mClient = client;
                 echo.mDisconnectListener = TCPEchoServer.this;
@@ -76,6 +76,10 @@ public class TCPEchoServer implements EchoDisconnectListener {
 
             }
         });
+    }
+
+    protected TCPEchoHandler getHandler() {
+        return new TCPEchoHandler();
     }
 
     public void stop() {

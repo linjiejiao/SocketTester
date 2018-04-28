@@ -39,6 +39,14 @@ public class TCPClient {
         mListener = listener;
     }
 
+    public String getRemoteAddress() {
+        if (mClientSocket != null) {
+            return mClientSocket.getRemoteSocketAddress().toString();
+        } else {
+            return mRemoteIPAddress + ":" + mRemotePort;
+        }
+    }
+
     public void connect() {
         if (mReadingThread == null) {
             mReadingThread = new ReadingThread();

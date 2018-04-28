@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 
+import cn.ljj.tester.AddressEchoServer;
 import cn.ljj.tester.TCPChannelDetecter;
 import cn.ljj.tester.TCPEchoServer;
 import cn.ljj.tester.TCPTransferSpeedTestServer;
@@ -21,7 +22,8 @@ public class Main {
             if ("server".equals(mode)) {
                 int tcpEchoServerPort = getPort(args);
                 int udpEchoServerPort = tcpEchoServerPort;
-                int tcpSpeedServerPort = tcpEchoServerPort + 1;
+                int addressEchoServerPort = udpEchoServerPort + 1;
+                int tcpSpeedServerPort = addressEchoServerPort + 1;
                 // TCP Echo
                 System.out.println("TCPEchoServer start listening on:" + tcpEchoServerPort);
                 TCPEchoServer tcpEchoServer = new TCPEchoServer();
@@ -30,6 +32,10 @@ public class Main {
                 System.out.println("UDPEcho start listening on:" + udpEchoServerPort);
                 UDPEcho updEcho = new UDPEcho();
                 updEcho.start(udpEchoServerPort);
+                // Address Echo
+                System.out.println("AddressEchoServer start listening on:" + addressEchoServerPort);
+                AddressEchoServer addressEchoServer = new AddressEchoServer();
+                addressEchoServer.start(addressEchoServerPort);
                 // speed test
                 System.out.println("TCPTransferSpeedTestServer start listening on:" + tcpSpeedServerPort);
                 TCPTransferSpeedTestServer tcpTransferSpeedTestServer = new TCPTransferSpeedTestServer();
@@ -38,6 +44,7 @@ public class Main {
                     waitForExit();
                     tcpEchoServer.stop();
                     updEcho.stop();
+                    addressEchoServer.stop();
                     tcpTransferSpeedTestServer.stopListen();
                 }
             } else if ("channelDetect".equals(mode)) {
