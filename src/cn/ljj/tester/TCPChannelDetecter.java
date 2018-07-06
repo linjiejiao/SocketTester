@@ -20,7 +20,7 @@ public class TCPChannelDetecter extends TimerTask implements ITCPClientListener 
     private String mRemoteIPAddress = null;
     private int mRemotePort = 0;
     private long mCurrentHeartBeatTag = 0;
-    private SimpleDateFormat mSimpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:SS ");
+    private SimpleDateFormat mSimpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss:SSS ");
     private PrintWriter mLogPrintWriter = null;
     // statistics
     public long mStartTime = 0;

@@ -20,7 +20,7 @@ public class Main {
         if (args != null && args.length > 0) {
             String mode = args[0];
             if ("server".equals(mode)) {
-                int tcpEchoServerPort = getPort(args);
+                int tcpEchoServerPort = getPort(args, DEFAULT_PORT);
                 int udpEchoServerPort = tcpEchoServerPort;
                 int addressEchoServerPort = udpEchoServerPort + 1;
                 int tcpSpeedServerPort = addressEchoServerPort + 1;
@@ -53,7 +53,7 @@ public class Main {
                     System.err.println("ip argument can not be empty!");
                     return;
                 }
-                int targetPort = getPort(args);
+                int targetPort = getPort(args, DEFAULT_PORT);
                 int heartBeatInterval = getInterval(args);
                 String channelDetecterLog = getOutputPath(args);
                 if (channelDetecterLog == null || channelDetecterLog.length() <= 0) {
@@ -74,7 +74,7 @@ public class Main {
                     System.err.println("ip argument can not be empty!");
                     return;
                 }
-                int speedTargetPort = getPort(args);
+                int speedTargetPort = getPort(args, DEFAULT_PORT + 2);
                 int speedTestInterval = getInterval(args);
                 String speedTestLog = getOutputPath(args);
                 if (speedTestLog == null || speedTestLog.length() <= 0) {
@@ -89,6 +89,9 @@ public class Main {
                     waitForExit();
                     tcpTransferSpeedTester.cancelTestSpeed();
                 }
+            } else {
+                System.out.println(
+                        "SocketTester [server/channelDetect/speedTest] ip=127.0.0.1 [port=12345] [interval=60] [output=./123.log] [bg]");
             }
         }
     }
@@ -113,7 +116,7 @@ public class Main {
         }
     }
 
-    private static int getPort(String[] args) {
+    private static int getPort(String[] args, int defaultPort) {
         for (String arg : args) {
             if (arg == null) {
                 continue;
@@ -127,7 +130,7 @@ public class Main {
                 }
             }
         }
-        return DEFAULT_PORT;
+        return defaultPort;
     }
 
     private static String getIP(String[] args) {

@@ -21,7 +21,7 @@ public class TCPTransferSpeedTester implements ITCPClientListener {
     private byte[] mTestClientDataBuffer = null;
     private int mReceiveDataLength = 0;
     private long mReceiveStartTime = 0;
-    private SimpleDateFormat mSimpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss ");
+    private SimpleDateFormat mSimpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss:SSS ");
     private PrintWriter mLogPrintWriter = null;
 
     public TCPTransferSpeedTester(String outputFilePath) {
